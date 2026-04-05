@@ -1,0 +1,266 @@
+[
+  {
+    "id": 1,
+    "startTime": 31384,
+    "endTime": 37384,
+    "text": "Ben ne sana taparım, ne seni ararım, ne trip atarım"
+  },
+  {
+    "id": 2,
+    "startTime": 38777,
+    "endTime": 44777,
+    "text": "Sen ne beni oyala ne omuz ovala işime bakarım"
+  },
+  {
+    "id": 3,
+    "startTime": 46179,
+    "endTime": 52179,
+    "text": "Ben o nazı çekemem, günaha giremem, kötü söz edemem"
+  },
+  {
+    "id": 4,
+    "startTime": 53680,
+    "endTime": 59680,
+    "text": "Aşk bu kızın ötesi, yaralı müzesi hareket edemem"
+  },
+  {
+    "id": 5,
+    "startTime": 61064,
+    "endTime": 64664,
+    "text": "Acılarım heveste, güneş açar aheste"
+  },
+  {
+    "id": 6,
+    "startTime": 64664,
+    "endTime": 66664,
+    "text": "Bir kapalı kafesteyim"
+  },
+  {
+    "id": 7,
+    "startTime": 68446,
+    "endTime": 74046,
+    "text": "Topu topu bir deste, arasıra bir besle, iki nota bir besteyim"
+  },
+  {
+    "id": 8,
+    "startTime": 75538,
+    "endTime": 78978,
+    "text": "Seni çöpe atacağım, poşeye yazık"
+  },
+  {
+    "id": 9,
+    "startTime": 78978,
+    "endTime": 82818,
+    "text": "Bir sigara yakacağım, ateşe yazık"
+  },
+  {
+    "id": 10,
+    "startTime": 82818,
+    "endTime": 85618,
+    "text": "Aşk, gidene acımak mı"
+  },
+  {
+    "id": 11,
+    "startTime": 85618,
+    "endTime": 89378,
+    "text": "Bu yükü taşımak mı, yarayı kaşımak mı"
+  },
+  {
+    "id": 12,
+    "startTime": 89378,
+    "endTime": 92978,
+    "text": "Sor, iyisi çıkacak mı"
+  },
+  {
+    "id": 13,
+    "startTime": 92978,
+    "endTime": 96818,
+    "text": "İçime akacak mı ve güneş açacak mı"
+  },
+  {
+    "id": 14,
+    "startTime": 96818,
+    "endTime": 100338,
+    "text": "Aşk, gidene acımak mı"
+  },
+  {
+    "id": 15,
+    "startTime": 100338,
+    "endTime": 104098,
+    "text": "Bu yükü taşımak mı, yarayı kaşımak mı"
+  },
+  {
+    "id": 16,
+    "startTime": 105058,
+    "endTime": 107778,
+    "text": "Sor, iyisi çıkacak mı"
+  },
+  {
+    "id": 17,
+    "startTime": 107778,
+    "endTime": 111458,
+    "text": "İçime akacak mı ve güneş açacak mı"
+  },
+  {
+    "id": 18,
+    "startTime": 138708,
+    "endTime": 146308,
+    "text": "Ben, ne sana taparım, ne seni ararım, ne trip atarım."
+  },
+  {
+    "id": 19,
+    "startTime": 147702,
+    "endTime": 153702,
+    "text": "Sen ne beni oyala ne omuz ovala işime bakarım"
+  },
+  {
+    "id": 20,
+    "startTime": 155100,
+    "endTime": 161100,
+    "text": "Ben o nazı çekemem, günaha giremem, kötü söz edemem"
+  },
+  {
+    "id": 21,
+    "startTime": 162607,
+    "endTime": 168607,
+    "text": "Aşk bu kızın ötesi yaralı müzesi hareket edemem"
+  },
+  {
+    "id": 22,
+    "startTime": 169624,
+    "endTime": 173624,
+    "text": "Acılarım heveste, güneş açar aheste"
+  },
+  {
+    "id": 23,
+    "startTime": 173624,
+    "endTime": 175624,
+    "text": "Bir kapalı kafesteyim"
+  },
+  {
+    "id": 24,
+    "startTime": 177368,
+    "endTime": 183088,
+    "text": "Topu topu bi deste, arasıra bi besle, iki nota bi besteyim"
+  },
+  {
+    "id": 25,
+    "startTime": 184487,
+    "endTime": 187947,
+    "text": "Seni çöpe atacağım poşete yazık"
+  },
+  {
+    "id": 26,
+    "startTime": 187947,
+    "endTime": 191667,
+    "text": "Bir sigara yakacağım ateşe yazık"
+  },
+  {
+    "id": 27,
+    "startTime": 191667,
+    "endTime": 194627,
+    "text": "Aşk, gidene acımak mı?"
+  },
+  {
+    "id": 28,
+    "startTime": 194627,
+    "endTime": 196367,
+    "text": "Bu yükü taşımak mı?"
+  },
+  {
+    "id": 29,
+    "startTime": 196367,
+    "endTime": 198367,
+    "text": "Yarayı kaşımak mı?"
+  },
+  {
+    "id": 30,
+    "startTime": 198367,
+    "endTime": 201967,
+    "text": "Sor, iyisi çıkacak mı?"
+  },
+  {
+    "id": 31,
+    "startTime": 201967,
+    "endTime": 203967,
+    "text": "İçime akacak mı?"
+  },
+  {
+    "id": 32,
+    "startTime": 203967,
+    "endTime": 205967,
+    "text": "Ve güneş açacak mı?"
+  },
+  {
+    "id": 33,
+    "startTime": 206742,
+    "endTime": 209262,
+    "text": "Aşk, gidene acımak mı"
+  },
+  {
+    "id": 34,
+    "startTime": 209262,
+    "endTime": 211062,
+    "text": "Bu yükü taşımak mı"
+  },
+  {
+    "id": 35,
+    "startTime": 211062,
+    "endTime": 213062,
+    "text": "Yarayı kaşımak mı"
+  },
+  {
+    "id": 36,
+    "startTime": 214062,
+    "endTime": 216662,
+    "text": "Sor, iyisi çıkacak mı"
+  },
+  {
+    "id": 37,
+    "startTime": 216662,
+    "endTime": 218462,
+    "text": "İçime akacak mı"
+  },
+  {
+    "id": 38,
+    "startTime": 218462,
+    "endTime": 220462,
+    "text": "Ve güneş açacak mı"
+  },
+  {
+    "id": 39,
+    "startTime": 280429,
+    "endTime": 286829,
+    "text": "Aşk, gideni acımak mı, bu yükü taşımak mı, yarayı kaşımak mı?"
+  },
+  {
+    "id": 40,
+    "startTime": 287962,
+    "endTime": 294362,
+    "text": "Bir sor, iyisi çıkacak mı, içime akacak mı ve güneş açacak mı?"
+  },
+  {
+    "id": 41,
+    "startTime": 295432,
+    "endTime": 297932,
+    "text": "Aşk, gidene acımak mı?"
+  },
+  {
+    "id": 42,
+    "startTime": 297932,
+    "endTime": 299632,
+    "text": "Bu yükü taşımak mı?"
+  },
+  {
+    "id": 43,
+    "startTime": 299632,
+    "endTime": 301632,
+    "text": "Yarayı kaşımak mı?"
+  },
+  {
+    "id": 44,
+    "startTime": 302723,
+    "endTime": 308723,
+    "text": "İyisi çıkacak mı, içime akacak mı ve güneş açacak mı"
+  }
+]
