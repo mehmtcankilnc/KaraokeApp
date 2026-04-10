@@ -1,9 +1,4 @@
-export type Music = {
-  id: number;
-  title: string;
-  songPath: string;
-  lyrics: [];
-};
+import { Music } from "../types/types";
 
 export const musics: Music[] = [
   {

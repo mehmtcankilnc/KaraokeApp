@@ -43,7 +43,7 @@ const generate = () => {
   }
 
   const files = fs.readdirSync(SRT_DIR).filter((file) => file.endsWith(".srt"));
-  let indexContent = `export const lyricsData: Record<string, any> = {\n`;
+  let indexContent = `export const lyricsData: Record<string, NodeRequire> = {\n`;
 
   files.forEach((file) => {
     const filePath = path.join(SRT_DIR, file);

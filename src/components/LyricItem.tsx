@@ -6,9 +6,10 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from "react-native-reanimated";
+import { Lyric } from "../types/types";
 
 export const LyricItem = React.memo(
-  ({ item, currentTime }: { item: any; currentTime: number }) => {
+  ({ item, currentTime }: { item: Lyric; currentTime: number }) => {
     const isPlaying =
       currentTime >= item.startTime && currentTime <= item.endTime;
 

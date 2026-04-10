@@ -48,7 +48,8 @@
           "photosPermission": "Uygulamanın medya kütüphanenize erişmesine izin verin.",
           "savePhotosPermission": "Uygulamanın ses dosyalarını cihazınıza kaydetmesine izin verin."
         }
-      ]
+      ],
+      "expo-asset"
     ]
   }
 }

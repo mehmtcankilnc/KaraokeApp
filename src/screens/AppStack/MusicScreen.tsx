@@ -7,7 +7,6 @@ import {
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  AudioModule,
   RecordingPresets,
   setAudioModeAsync,
   useAudioPlayer,
@@ -16,22 +15,23 @@ import {
 import { LyricItem } from "../../components/LyricItem";
 import { ChevronLeft, Pause, Play, Square } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import SuccessModal from "../../components/SuccessModal";
 import { FFmpegKit, ReturnCode } from "@wokcito/ffmpeg-kit-react-native";
-import * as FileSystem from "expo-file-system/legacy";
+import { File, Paths } from "expo-file-system";
 import { Asset } from "expo-asset";
-import CustomAlert from "../../components/CustomAlert";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { AppStackParamList } from "../../navigation/navigation.types";
+import { Lyric } from "../../types/types";
+import { useModal } from "../../hooks/useModal";
+import { StackNavigationProp } from "@react-navigation/stack";
 
-type Props = {
-  navigation: any;
-  route: any;
-};
-
-export default function MusicScreen({ navigation, route }: Props) {
+export default function MusicScreen() {
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
+  const route = useRoute<RouteProp<AppStackParamList, "Music">>();
   const { music } = route.params;
 
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
+  const { showStatusModal } = useModal();
 
   const player = useAudioPlayer(music.songPath);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -39,53 +39,33 @@ export default function MusicScreen({ navigation, route }: Props) {
   const lastScrolledIndexRef = useRef<number>(-1);
   const isFinishingRef = useRef<boolean>(false);
   const [isPlaying, setIsPlaying] = useState(player.playing);
-  const [isFinished, setIsFinished] = useState(false);
   const [activeSeconds, setActiveSeconds] = useState(0);
   const [isMixing, setIsMixing] = useState(false);
-  const [mixedAudioUri, setMixedAudioUri] = useState<string | null>(null);
-
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertText, setAlertText] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
+
     (async () => {
-      const status = await AudioModule.requestRecordingPermissionsAsync();
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
 
-      if (!status.granted) {
-        setAlertTitle("İzin Reddedildi!");
-        setAlertText(
-          "Mikrofona erişim izni reddedildi. Lütfen daha sonra tekrar deneyin.",
-        );
-        setAlertVisible(true);
+        if (isMounted) {
+          await recorder.prepareToRecordAsync();
+          recorder.record();
+          player.play();
+          setIsPlaying(true);
+        }
+      } catch (e) {
+        console.log("Ses başlatılırken hata oluştu: ", e);
       }
-
-      setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: true,
-      });
-
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-      player.play();
-      setIsPlaying(true);
     })();
 
     return () => {
-      if (player) {
-        try {
-          player.pause();
-          player.remove();
-        } catch (e) {}
-      }
-
-      if (recorder) {
-        try {
-          if (recorder.isRecording) {
-            recorder.stop();
-          }
-        } catch (e) {}
-      }
+      isMounted = false;
+      setIsPlaying(false);
     };
   }, []);
 
@@ -96,7 +76,6 @@ export default function MusicScreen({ navigation, route }: Props) {
   };
 
   const handleResume = () => {
-    setIsFinished(false);
     isFinishingRef.current = false;
     player.play();
     recorder.record();
@@ -110,52 +89,75 @@ export default function MusicScreen({ navigation, route }: Props) {
       player.pause();
       setIsPlaying(false);
 
-      if (recorder && recorder.isRecording) {
+      if (recorder) {
         await recorder.stop();
+      }
 
-        if (recorder.uri) {
-          setIsMixing(true);
-          try {
-            let finalSongPath = music.songPath;
-            if (typeof music.songPath === "number") {
-              const asset = Asset.fromModule(music.songPath);
-              const tempPath = `${(FileSystem as any).documentDirectory}temp_bg_${Date.now()}.mp3`;
-              await FileSystem.downloadAsync(asset.uri, tempPath);
-              finalSongPath = tempPath;
+      if (recorder.uri) {
+        setIsMixing(true);
+        try {
+          let finalSongPath = music.songPath;
+          if (typeof music.songPath === "number") {
+            const asset = Asset.fromModule(music.songPath);
+            if (!asset.localUri) {
+              try {
+                await asset.downloadAsync();
+              } catch (err) {
+                console.log("Asset cihaz önbelleğine alınamadı: ", err);
+              }
             }
 
-            const outputUri = `${(FileSystem as any).documentDirectory}mixed_${Date.now()}.m4a`;
-
-            const latencyMs = 1000;
-            const command = `-i "${recorder.uri}" -i "${finalSongPath}" -filter_complex "[0:a]atrim=start=${latencyMs / 1000},asetpts=PTS-STARTPTS[vocal];[1:a]volume=0.3[bg];[vocal][bg]amix=inputs=2:duration=longest" -t ${playedDuration} "${outputUri}"`;
-
-            const session = await FFmpegKit.execute(command);
-            const returnCode = await session.getReturnCode();
-
-            if (ReturnCode.isSuccess(returnCode)) {
-              setMixedAudioUri(outputUri);
-            } else {
-              setAlertTitle("Hata!");
-              setAlertText(
-                "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
-              );
-              setAlertVisible(true);
-            }
-          } catch (ffmpegError) {
-            setAlertTitle("Hata!");
-            setAlertText("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
-            setAlertVisible(true);
+            finalSongPath = asset.localUri || asset.uri;
           }
+
+          const outputFile = new File(
+            Paths.document,
+            `mixed_${Date.now()}.m4a`,
+          );
+
+          const latencyMs = 1000;
+          const command = `-i "${recorder.uri}" -i "${finalSongPath}" -filter_complex "[0:a]atrim=start=${latencyMs / 1000},asetpts=PTS-STARTPTS[vocal];[1:a]volume=0.3[bg];[vocal][bg]amix=inputs=2:duration=longest" -t ${playedDuration} "${outputFile.uri}"`;
+
+          const session = await FFmpegKit.execute(command);
+          const returnCode = await session.getReturnCode();
+
+          if (ReturnCode.isSuccess(returnCode)) {
+            navigation.navigate("Success", {
+              vocalUri: recorder.uri,
+              mixedUri: outputFile.uri,
+            });
+          } else {
+            const failLogs = await session.getLogs();
+            showStatusModal({
+              type: "error",
+              title: "Hata",
+              message: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+            });
+            console.error(
+              "FFmpeg komutu başarısız sonuçlandı. Loglar:",
+              failLogs,
+            );
+          }
+        } catch (ffmpegError) {
+          showStatusModal({
+            type: "error",
+            title: "Hata",
+            message: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+          });
+          console.log("FFmpeg komutu çalıştırılamadı: ", ffmpegError);
+        } finally {
           setIsMixing(false);
         }
       }
-      setIsFinished(true);
     } catch (error) {
-      setAlertTitle("Hata!");
-      setAlertText("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
-      setAlertVisible(true);
+      showStatusModal({
+        type: "error",
+        title: "Hata",
+        message: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+      });
+      console.log("Bilinmeyen bir hata oluştu: ", error);
+    } finally {
       setIsMixing(false);
-      setIsFinished(true);
     }
   };
 
@@ -166,7 +168,7 @@ export default function MusicScreen({ navigation, route }: Props) {
         setActiveSeconds(currentMs);
 
         const index = music.lyrics.findIndex(
-          (l: any) => currentMs >= l.startTime && currentMs <= l.endTime,
+          (l: Lyric) => currentMs >= l.startTime && currentMs <= l.endTime,
         );
 
         if (index !== -1 && index !== lastScrolledIndexRef.current) {
@@ -230,7 +232,7 @@ export default function MusicScreen({ navigation, route }: Props) {
         ref={flatListRef}
         data={music.lyrics}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Lyric }) => (
           <LyricItem item={item} currentTime={activeSeconds} />
         )}
         getItemLayout={(_, index) => ({
@@ -284,18 +286,6 @@ export default function MusicScreen({ navigation, route }: Props) {
           </Text>
         </Pressable>
       </View>
-      {/** Success Modal */}
-      {isFinished && (
-        <SuccessModal
-          visible={isFinished}
-          handleDismiss={() => {
-            setIsFinished(false);
-            navigation.goBack();
-          }}
-          vocalUri={recorder?.uri}
-          mixedUri={mixedAudioUri}
-        />
-      )}
       {/** Loading */}
       {isMixing && (
         <View
@@ -314,15 +304,6 @@ export default function MusicScreen({ navigation, route }: Props) {
             Sesler Birleştiriliyor...
           </Text>
         </View>
-      )}
-      {/** Alert */}
-      {alertVisible && (
-        <CustomAlert
-          visible={alertVisible}
-          handleDismiss={() => setAlertVisible(false)}
-          title={alertTitle}
-          text={alertText}
-        />
       )}
     </View>
   );

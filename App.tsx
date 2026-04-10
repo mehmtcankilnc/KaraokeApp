@@ -3,6 +3,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import AppStack from "./src/navigation/AppStack";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "react-native";
+import { ModalProvider } from "./src/providers/ModalProvider";
 
 export default function App() {
   return (
@@ -13,7 +14,9 @@ export default function App() {
           style={{ flex: 1, backgroundColor: "#fee9e6" }}
           edges={[]}
         >
-          <AppStack />
+          <ModalProvider>
+            <AppStack />
+          </ModalProvider>
         </SafeAreaView>
       </NavigationContainer>
     </SafeAreaProvider>
