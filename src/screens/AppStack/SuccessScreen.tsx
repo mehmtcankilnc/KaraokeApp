@@ -1,23 +1,46 @@
-import { View, Text, Linking, Pressable, BackHandler } from "react-native";
+import {
+  View,
+  Text,
+  Linking,
+  Pressable,
+  BackHandler,
+  ActivityIndicator,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackParamList } from "../../navigation/navigation.types";
 import { useModal } from "../../hooks/useModal";
 import * as Sharing from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
-import { Download, Share2 } from "lucide-react-native";
+import { CheckCheck, Download, Share2 } from "lucide-react-native";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StackNavigationProp } from "@react-navigation/stack";
+import Slider from "@react-native-community/slider";
+import { FFmpegInput } from "../../types/types";
+import { executeFFmpeg } from "../../utilities/executeFfmpeg";
+import { ReturnCode } from "@wokcito/ffmpeg-kit-react-native";
+import { Paths, File } from "expo-file-system";
+import {
+  MAX_LATENCY,
+  MIN_LATENCY,
+  STEP_QUANTITY,
+} from "../../constants/constants";
 
 export default function SuccessScreen() {
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const route = useRoute<RouteProp<AppStackParamList, "Success">>();
-  const { vocalUri, mixedUri } = route.params;
+  const { vocalUri, mixedUri, ffmpegInput } = route.params;
   const insets = useSafeAreaInsets();
 
   const { showStatusModal, showActionModal } = useModal();
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const [customLatencyValue, setCustomLatencyValue] = useState<number>(
+    ffmpegInput.latencyMs,
+  );
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [newMixedUri, setNewMixedUri] = useState<string | null>(null);
 
   const handleShare = async (uri?: string | null, title?: string) => {
     if (!uri) {
@@ -103,6 +126,46 @@ export default function SuccessScreen() {
       console.log("Dosya kaydedilirken bir hata oluştu: ", error);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleExecuteAgain = async () => {
+    try {
+      if (isExecuting) return;
+
+      setIsExecuting(true);
+      const outputFile = new File(Paths.document, `mixed_${Date.now()}.m4a`);
+
+      const newInput: FFmpegInput = {
+        recorderUri: ffmpegInput.recorderUri,
+        songPath: ffmpegInput.songPath,
+        latencyMs: customLatencyValue,
+        vocalVolume: ffmpegInput.vocalVolume,
+        playedDuration: ffmpegInput.playedDuration,
+        outputUri: outputFile.uri,
+      };
+
+      const session = await executeFFmpeg(newInput);
+
+      const returnCode = await session.getReturnCode();
+
+      if (ReturnCode.isSuccess(returnCode)) {
+        setNewMixedUri(outputFile.uri);
+      } else {
+        showStatusModal({
+          type: "error",
+          title: "Hata",
+          message: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+        });
+        console.log("FFmpeg komutu başarısız sonuçlandı.");
+      }
+    } catch (error) {
+      console.log(
+        "FFmpeg komutunu tekrar çalıştırırken bir hata oluştu: ",
+        error,
+      );
+    } finally {
+      setIsExecuting(false);
     }
   };
 
@@ -201,6 +264,73 @@ export default function SuccessScreen() {
             </View>
           )}
         </View>
+      </View>
+      <View
+        className="w-full bg-[#fee9e6] rounded-xl"
+        style={{
+          padding: wp(4),
+        }}
+      >
+        <Text
+          style={{
+            color: "#131e29",
+            fontSize: 14,
+            fontWeight: 400,
+            alignSelf: "center",
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          Ses kaydınız başarıyla oluşturulmuştur. Yukarıdaki butonlar
+          aracılığıyla oluşturulan kayıtları indirebilirsiniz. Ayrıca gecikmeyi
+          dengelemek için alttaki ses ayar çubuğunu kullanabilirsiniz.
+        </Text>
+        <View className="flex-row w-full justify-between items-center">
+          <Slider
+            style={{ width: 200, height: 40 }}
+            minimumValue={MIN_LATENCY}
+            maximumValue={MAX_LATENCY}
+            value={customLatencyValue}
+            step={STEP_QUANTITY}
+            onValueChange={(val) =>
+              setCustomLatencyValue(Number(val.toFixed(1)))
+            }
+            minimumTrackTintColor="#131e29"
+            maximumTrackTintColor="#000000"
+            thumbSize={16}
+            thumbTintColor="#f97362"
+          />
+          <Text className="text-[#131e29] font-bold text-sm">
+            {customLatencyValue} ms
+          </Text>
+          <Pressable
+            onPress={handleExecuteAgain}
+            disabled={
+              isExecuting || customLatencyValue === ffmpegInput.latencyMs
+            }
+            className="bg-[#131e29] rounded-lg items-center justify-center"
+            style={{
+              padding: wp(3),
+              opacity: customLatencyValue === ffmpegInput.latencyMs ? 0.5 : 1,
+            }}
+          >
+            {isExecuting ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <CheckCheck color={"#ffffff"} />
+            )}
+          </Pressable>
+        </View>
+        {newMixedUri && (
+          <Pressable
+            onPress={() => handleDownload(newMixedUri)}
+            style={{ padding: wp(2), columnGap: wp(3), marginTop: wp(4) }}
+            className="w-full bg-[#f97362] rounded-xl flex-row justify-center items-center"
+          >
+            <Download color="#fee9e6" size={18} />
+            <Text className="text-[#fee9e6] font-semibold text-sm">İndir</Text>
+          </Pressable>
+        )}
       </View>
       {/** Homepage Button */}
       <Pressable

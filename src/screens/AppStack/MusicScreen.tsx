@@ -5,8 +5,9 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  RecordingOptions,
   RecordingPresets,
   setAudioModeAsync,
   useAudioPlayer,
@@ -20,11 +21,16 @@ import { File, Paths } from "expo-file-system";
 import { Asset } from "expo-asset";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackParamList } from "../../navigation/navigation.types";
-import { Lyric } from "../../types/types";
+import { DeviceType, FFmpegInput, Lyric } from "../../types/types";
 import { useModal } from "../../hooks/useModal";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { getCurrentDeviceType } from "../../../modules/audio-device";
+import { AUDIO_LATENCY_MAP } from "../../constants/constants";
+import { executeFFmpeg } from "../../utilities/executeFfmpeg";
 
 export default function MusicScreen() {
+  const [deviceType, setDeviceType] = useState<DeviceType | null>(null);
+
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const route = useRoute<RouteProp<AppStackParamList, "Music">>();
   const { music } = route.params;
@@ -33,8 +39,31 @@ export default function MusicScreen() {
   const insets = useSafeAreaInsets();
   const { showStatusModal } = useModal();
 
+  const getAndroidAudioSource = (type: DeviceType | null) => {
+    switch (type) {
+      case "speaker":
+        return "mic";
+      case "bluetooth":
+      case "wired":
+        return "voice_performance";
+      default:
+        return "default";
+    }
+  };
+
+  const recorderOptions = useMemo<RecordingOptions>(() => {
+    return {
+      ...RecordingPresets.HIGH_QUALITY,
+      android: {
+        audioEncoder: "aac",
+        audioSource: getAndroidAudioSource(deviceType),
+        outputFormat: "mpeg4",
+      },
+    };
+  }, [deviceType]);
+
   const player = useAudioPlayer(music.songPath);
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorder = useAudioRecorder(recorderOptions);
 
   const lastScrolledIndexRef = useRef<number>(-1);
   const isFinishingRef = useRef<boolean>(false);
@@ -44,6 +73,21 @@ export default function MusicScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    (async () => {
+      const currentDeviceType = await getCurrentDeviceType();
+      if (isMounted) {
+        setDeviceType(currentDeviceType);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!deviceType || !recorder) return;
 
     (async () => {
       try {
@@ -67,7 +111,9 @@ export default function MusicScreen() {
       isMounted = false;
       setIsPlaying(false);
     };
-  }, []);
+  }, [deviceType]);
+
+  const latencyMs = AUDIO_LATENCY_MAP[deviceType!] || 100;
 
   const handlePause = () => {
     player.pause();
@@ -115,16 +161,29 @@ export default function MusicScreen() {
             `mixed_${Date.now()}.m4a`,
           );
 
-          const latencyMs = 1000;
-          const command = `-i "${recorder.uri}" -i "${finalSongPath}" -filter_complex "[0:a]atrim=start=${latencyMs / 1000},asetpts=PTS-STARTPTS[vocal];[1:a]volume=0.3[bg];[vocal][bg]amix=inputs=2:duration=longest" -t ${playedDuration} "${outputFile.uri}"`;
+          let vocalVolume = deviceType === "bluetooth" ? "7.0" : "5.0";
 
-          const session = await FFmpegKit.execute(command);
+          // const command = `-i "${recorder.uri}" -i "${finalSongPath}" -filter_complex "[0:a]atrim=start=${latencyMs / 1000},asetpts=PTS-STARTPTS,volume=${vocalVolume}[vocal];[1:a]volume=0.05[bg];[vocal][bg]amix=inputs=2:duration=longest[mixout];[mixout]volume=1.5" -t ${playedDuration} "${outputFile.uri}"`;
+
+          // const session = await FFmpegKit.execute(command);
+          const ffmpegInput: FFmpegInput = {
+            recorderUri: recorder.uri,
+            songPath: finalSongPath,
+            latencyMs: latencyMs,
+            vocalVolume: vocalVolume,
+            playedDuration: playedDuration,
+            outputUri: outputFile.uri,
+          };
+
+          const session = await executeFFmpeg(ffmpegInput);
+
           const returnCode = await session.getReturnCode();
 
           if (ReturnCode.isSuccess(returnCode)) {
             navigation.navigate("Success", {
               vocalUri: recorder.uri,
               mixedUri: outputFile.uri,
+              ffmpegInput: ffmpegInput,
             });
           } else {
             const failLogs = await session.getLogs();
@@ -133,7 +192,7 @@ export default function MusicScreen() {
               title: "Hata",
               message: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
             });
-            console.error(
+            console.log(
               "FFmpeg komutu başarısız sonuçlandı. Loglar:",
               failLogs,
             );

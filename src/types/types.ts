@@ -11,3 +11,14 @@ export type Lyric = {
   endTime: number;
   text: string;
 };
+
+export type DeviceType = "speaker" | "bluetooth" | "wired" | "default";
+
+export type FFmpegInput = {
+  recorderUri: string;
+  songPath: string;
+  latencyMs: number;
+  vocalVolume: string;
+  playedDuration: number;
+  outputUri: string;
+};
