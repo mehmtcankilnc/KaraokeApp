@@ -27,11 +27,18 @@ export default function HomeScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   const checkPermission = useCallback(async () => {
-    const status = await AudioModule.getRecordingPermissionsAsync();
+    let status = await AudioModule.getRecordingPermissionsAsync();
+
+    if (!status.granted && status.canAskAgain) {
+      status = await AudioModule.requestRecordingPermissionsAsync();
+    }
+
     setHasPermission(status.granted);
 
-    if (status.granted) hideModal();
-  }, []);
+    if (status.granted && navigation.isFocused()) {
+      hideModal();
+    }
+  }, [hideModal]);
 
   useEffect(() => {
     const sub = AppState.addEventListener(
@@ -57,6 +64,10 @@ export default function HomeScreen() {
       onConfirm: () => Linking.openSettings(),
     });
   };
+
+  if (hasPermission === null) {
+    return <View className="flex-1 bg-[#131e29]" />;
+  }
 
   if (hasPermission === false) {
     return (

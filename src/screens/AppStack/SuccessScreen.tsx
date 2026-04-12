@@ -5,14 +5,15 @@ import {
   Pressable,
   BackHandler,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackParamList } from "../../navigation/navigation.types";
 import { useModal } from "../../hooks/useModal";
 import * as Sharing from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
-import { CheckCheck, Download, Share2 } from "lucide-react-native";
+import { CheckCheck, Download, Pause, Play, Share2 } from "lucide-react-native";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -26,6 +27,7 @@ import {
   MIN_LATENCY,
   STEP_QUANTITY,
 } from "../../constants/constants";
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 
 export default function SuccessScreen() {
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
@@ -34,13 +36,35 @@ export default function SuccessScreen() {
   const insets = useSafeAreaInsets();
 
   const { showStatusModal, showActionModal } = useModal();
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   const [customLatencyValue, setCustomLatencyValue] = useState<number>(
     ffmpegInput.latencyMs,
   );
-  const [isExecuting, setIsExecuting] = useState(false);
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [newMixedUri, setNewMixedUri] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  const player = useAudioPlayer(newMixedUri);
+
+  useEffect(() => {
+    const backSub = BackHandler.addEventListener("hardwareBackPress", () => {
+      navigation.replace("Home");
+      return true;
+    });
+
+    player.addListener("playbackStatusUpdate", (status) => {
+      if (status.isLoaded) {
+        if (status.didJustFinish && !status.loop) {
+          setIsPlaying(false);
+          player.pause();
+          player.seekTo(0);
+        }
+      }
+    });
+
+    return () => backSub.remove();
+  }, [player]);
 
   const handleShare = async (uri?: string | null, title?: string) => {
     if (!uri) {
@@ -96,9 +120,9 @@ export default function SuccessScreen() {
     }
 
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const status = await MediaLibrary.requestPermissionsAsync();
 
-      if (status !== "granted") {
+      if (!status.granted && !status.canAskAgain) {
         showActionModal({
           title: "İzin Reddedildi",
           message:
@@ -111,11 +135,13 @@ export default function SuccessScreen() {
 
       await MediaLibrary.createAssetAsync(uri);
 
-      showStatusModal({
-        type: "success",
-        title: "İndirme Tamamlandı",
-        message: "Ses kaydı cihazınıza başarıyla kaydedildi.",
-      });
+      setTimeout(() => {
+        showStatusModal({
+          type: "success",
+          title: "İndirme Tamamlandı",
+          message: "Ses kaydı cihazınıza başarıyla kaydedildi.",
+        });
+      }, 500);
     } catch (error) {
       showStatusModal({
         type: "error",
@@ -124,8 +150,6 @@ export default function SuccessScreen() {
           "Dosya kaydedilirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
       });
       console.log("Dosya kaydedilirken bir hata oluştu: ", error);
-    } finally {
-      setIsDownloading(false);
     }
   };
 
@@ -169,19 +193,35 @@ export default function SuccessScreen() {
     }
   };
 
-  useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      navigation.replace("Home");
-      return true;
-    });
+  const handlePlay = async () => {
+    try {
+      if (isPlaying) {
+        player.pause();
+        setIsPlaying(false);
+      } else {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
 
-    return () => sub.remove();
-  }, []);
+        player.play();
+        setIsPlaying(true);
+      }
+    } catch (e) {
+      showStatusModal({
+        type: "error",
+        title: "Hata",
+        message:
+          "Ses başlatılırken hata oluştu. Lütfen daha sonra tekrar deneyin.",
+      });
+      console.log("Ses başlatılırken hata oluştu: ", e);
+    }
+  };
 
   return (
-    <View
+    <ScrollView
       className="flex-1 bg-[#131e29]"
-      style={{ padding: wp(5), gap: wp(5) }}
+      contentContainerStyle={{ gap: wp(5), padding: wp(5) }}
     >
       {/** Title */}
       <Text
@@ -195,6 +235,7 @@ export default function SuccessScreen() {
       >
         Şarkın Hazır
       </Text>
+      {/** First Results */}
       <View
         className="w-full bg-[#fee9e6] rounded-xl justify-between items-center"
         style={{
@@ -265,6 +306,7 @@ export default function SuccessScreen() {
           )}
         </View>
       </View>
+      {/** Edit Section */}
       <View
         className="w-full bg-[#fee9e6] rounded-xl"
         style={{
@@ -287,7 +329,7 @@ export default function SuccessScreen() {
         </Text>
         <View className="flex-row w-full justify-between items-center">
           <Slider
-            style={{ width: 200, height: 40 }}
+            style={{ flex: 1, height: 40 }}
             minimumValue={MIN_LATENCY}
             maximumValue={MAX_LATENCY}
             value={customLatencyValue}
@@ -321,15 +363,49 @@ export default function SuccessScreen() {
             )}
           </Pressable>
         </View>
+        {/** New Results */}
         {newMixedUri && (
-          <Pressable
-            onPress={() => handleDownload(newMixedUri)}
-            style={{ padding: wp(2), columnGap: wp(3), marginTop: wp(4) }}
-            className="w-full bg-[#f97362] rounded-xl flex-row justify-center items-center"
-          >
-            <Download color="#fee9e6" size={18} />
-            <Text className="text-[#fee9e6] font-semibold text-sm">İndir</Text>
-          </Pressable>
+          <View className="w-full" style={{ rowGap: wp(4), marginTop: wp(4) }}>
+            <Text className="text-[#131e29] font-bold text-sm">
+              🎵 Güncellenmiş Mix
+            </Text>
+            <View className="flex-row" style={{ columnGap: wp(4) }}>
+              <Pressable
+                onPress={async () => await handlePlay()}
+                style={{ padding: wp(2), columnGap: wp(3) }}
+                className="flex-1 bg-[#d1d1d1] rounded-xl flex-row justify-center items-center"
+              >
+                {isPlaying ? (
+                  <Pause color="#131e29" size={18} />
+                ) : (
+                  <Play color="#131e29" size={18} />
+                )}
+                <Text className="text-[#131e29] font-semibold text-sm">
+                  {isPlaying ? "Durdur" : "Oynat"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleShare(newMixedUri, "Vokal Kaydını Paylaş")}
+                style={{ padding: wp(2), columnGap: wp(3) }}
+                className="flex-1 bg-[#131e29] rounded-xl flex-row justify-center items-center"
+              >
+                <Share2 color="#fee9e6" size={18} />
+                <Text className="text-[#fee9e6] font-semibold text-sm">
+                  Paylaş
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleDownload(newMixedUri)}
+                style={{ padding: wp(2), columnGap: wp(3) }}
+                className="flex-1 bg-[#f97362] rounded-xl flex-row justify-center items-center"
+              >
+                <Download color="#fee9e6" size={18} />
+                <Text className="text-[#fee9e6] font-semibold text-sm">
+                  İndir
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         )}
       </View>
       {/** Homepage Button */}
@@ -342,6 +418,6 @@ export default function SuccessScreen() {
       >
         <Text className="text-[#131e29] font-bold text-lg">Ana Sayfa</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }

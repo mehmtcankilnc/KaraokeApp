@@ -1,5 +1,4 @@
 import { Text, Pressable, View } from "react-native";
-import React from "react";
 import { StatusType } from "../../providers/ModalProvider";
 import BaseModal from "./BaseModal";
 

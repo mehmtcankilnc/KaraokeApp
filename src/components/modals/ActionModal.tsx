@@ -1,5 +1,4 @@
 import { View, Text, Pressable } from "react-native";
-import React from "react";
 import BaseModal from "./BaseModal";
 
 type Props = {
@@ -27,6 +26,7 @@ export default function ActionModal({
           fontSize: 24,
           fontWeight: 800,
           alignSelf: "center",
+          textAlign: "center",
           marginBottom: 8,
         }}
       >

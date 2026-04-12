@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useCallback, useState } from "react";
 import StatusModal from "../components/modals/StatusModal";
 import ActionModal from "../components/modals/ActionModal";
 
@@ -32,23 +32,23 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const [statusProps, setStatusProps] = useState<StatusModalProps | null>(null);
   const [actionProps, setActionProps] = useState<ActionModalProps | null>(null);
 
-  const showStatusModal = (props: StatusModalProps) => {
+  const showStatusModal = useCallback((props: StatusModalProps) => {
     setStatusProps(props);
     setActiveModal("status");
-  };
+  }, []);
 
-  const showActionModal = (props: ActionModalProps) => {
+  const showActionModal = useCallback((props: ActionModalProps) => {
     setActionProps(props);
     setActiveModal("action");
-  };
+  }, []);
 
-  const hideModal = () => {
+  const hideModal = useCallback(() => {
     setActiveModal(null);
     setTimeout(() => {
       setStatusProps(null);
       setActionProps(null);
     }, 300);
-  };
+  }, []);
 
   return (
     <ModalContext.Provider

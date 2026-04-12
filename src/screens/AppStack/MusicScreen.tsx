@@ -5,7 +5,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   RecordingOptions,
   RecordingPresets,
@@ -16,7 +16,7 @@ import {
 import { LyricItem } from "../../components/LyricItem";
 import { ChevronLeft, Pause, Play, Square } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FFmpegKit, ReturnCode } from "@wokcito/ffmpeg-kit-react-native";
+import { ReturnCode } from "@wokcito/ffmpeg-kit-react-native";
 import { File, Paths } from "expo-file-system";
 import { Asset } from "expo-asset";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";

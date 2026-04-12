@@ -1,5 +1,5 @@
 import { Modal, Pressable } from "react-native";
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 
 type Props = {
